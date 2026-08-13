@@ -1,0 +1,14 @@
+{
+  "name": "prepaid-bulb",
+  "version": "1.0.0",
+  "description": "A bulb you can flip 5 times for free, then top up KES 10 via real M-Pesa STK push.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
