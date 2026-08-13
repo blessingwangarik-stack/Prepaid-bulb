@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prepaid Bulb — Flip the Switch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14141a;
+    --bg-vignette: #0b0b0f;
+    --panel: #1e1e26;
+    --panel-line: #2c2c36;
+    --glass-off: #43434c;
+    --glass-off-hi: #55555f;
+    --glow-mid: #ffc857;
+    --glow-outer: #ff9d2e;
+    --brass: #b08655;
+    --brass-dark: #7a5c39;
+    --text: #ede8dd;
+    --text-muted: #8b8b95;
+    --alert: #d6634a;
+    --alert-dim: #7a3527;
+    --ok: #6fbf7a;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: radial-gradient(ellipse 900px 700px at 50% 30%, #1c1c24 0%, var(--bg) 55%, var(--bg-vignette) 100%);
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--text);
+    padding:24px;
+  }
+
+  .stage{
+    width:100%;
+    max-width:420px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+
+  .eyebrow{ font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--text-muted); margin:0 0 6px; }
+  h1{ font-family:'Fraunces', serif; font-weight:500; font-size:clamp(28px,6vw,38px); margin:0 0 34px; letter-spacing:-0.01em; }
+
+  .fixture{ position:relative; width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:28px; }
+  .cord{ width:2px; height:38px; background:linear-gradient(var(--panel-line), var(--brass-dark)); }
+  .cap{ width:34px; height:14px; background:linear-gradient(180deg,#cfa06a,var(--brass) 40%,var(--brass-dark)); border-radius:4px 4px 2px 2px; box-shadow: inset 0 -2px 3px rgba(0,0,0,.35); }
+  .thread{ width:26px; height:16px; background:repeating-linear-gradient(0deg,var(--brass) 0px,var(--brass) 2px,var(--brass-dark) 2px,var(--brass-dark) 4px); }
+
+  button.bulb-btn{ all:unset; cursor:pointer; position:relative; display:flex; flex-direction:column; align-items:center; padding:18px; border-radius:50%; }
+  button.bulb-btn:focus-visible{ outline:2px solid var(--glow-mid); outline-offset:6px; }
+  button.bulb-btn:disabled{ cursor:not-allowed; opacity:.75; }
+
+  .glow{ position:absolute; top:6px; left:50%; transform:translateX(-50%); width:230px; height:230px; border-radius:50%; background:radial-gradient(circle,var(--glow-outer) 0%,transparent 70%); opacity:0; filter:blur(2px); transition:opacity .45s ease; pointer-events:none; }
+  .fixture.on .glow{ opacity:.55; }
+
+  .bulb-glass{ width:120px; height:130px; border-radius:50% 50% 46% 46% / 55% 55% 45% 45%; background:radial-gradient(circle at 38% 30%,var(--glass-off-hi),var(--glass-off) 60%,#33333a 100%); box-shadow: inset -8px -10px 18px rgba(0,0,0,.35), inset 6px 6px 14px rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; transition: background .45s ease, box-shadow .45s ease; position:relative; z-index:1; }
+  .fixture.on .bulb-glass{ background:radial-gradient(circle at 38% 30%,#fff6dd,var(--glow-mid) 55%,var(--glow-outer) 100%); box-shadow: inset -6px -8px 16px rgba(120,60,0,.25), inset 6px 6px 16px rgba(255,255,255,.35), 0 0 60px 8px rgba(255,168,50,.45); }
+
+  .filament{ width:34px; height:44px; border:2px solid #6b6b74; border-top:none; border-radius:0 0 10px 10px; transition: border-color .45s ease, box-shadow .45s ease; }
+  .fixture.on .filament{ border-color:#7a3d00; box-shadow:0 0 10px 2px rgba(255,200,80,.9); }
+
+  .hint{ font-size:12px; color:var(--text-muted); margin-top:14px; }
+
+  .meter{ width:100%; background:var(--panel); border:1px solid var(--panel-line); border-radius:10px; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .meter-label{ text-align:left; }
+  .meter-label .top{ font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-muted); display:block; margin-bottom:4px; }
+  .meter-label .bottom{ font-size:13px; color:var(--text); }
+
+  .odometer{ display:flex; gap:3px; background:#0f0f13; border:1px solid var(--panel-line); border-radius:6px; padding:6px 8px; align-items:center; }
+  .digit{ width:16px; height:26px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:600; color:var(--glow-mid); }
+  .odometer .slash{ color:var(--text-muted); font-size:16px; }
+
+  .status{ margin-top:12px; font-size:11.5px; color:var(--text-muted); min-height:16px; }
+  .status.warn{ color:var(--alert); }
+  .status.ok{ color:var(--ok); }
+
+  .overlay{ position:fixed; inset:0; background:rgba(11,11,15,.78); backdrop-filter: blur(3px); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:10; }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+
+  .paycard{ width:100%; max-width:340px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; padding:26px 24px 22px; text-align:left; transform:translateY(10px); transition:transform .25s ease; }
+  .overlay.show .paycard{ transform:translateY(0); }
+
+  .badge{ display:inline-flex; align-items:center; gap:6px; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--alert); border:1px solid var(--alert-dim); background:rgba(214,99,74,.08); padding:4px 8px; border-radius:999px; margin-bottom:14px; }
+  .badge::before{ content:""; width:6px; height:6px; border-radius:50%; background:var(--alert); }
+  .badge.ok{ color:var(--ok); border-color:#2f4a33; background:rgba(111,191,122,.08); }
+  .badge.ok::before{ background:var(--ok); }
+
+  .paycard h2{ font-family:'Fraunces', serif; font-weight:500; font-size:22px; margin:0 0 8px; }
+  .paycard p{ font-size:13px; line-height:1.55; color:var(--text-muted); margin:0 0 18px; }
+  .amount{ font-size:34px; font-weight:600; color:var(--text); margin-bottom:16px; }
+  .amount small{ font-size:14px; font-weight:500; color:var(--text-muted); margin-right:6px; }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; }
+  .field input{ width:100%; background:#0f0f13; border:1px solid var(--panel-line); border-radius:8px; padding:11px 12px; color:var(--text); font-family:'IBM Plex Mono', monospace; font-size:14px; }
+  .field input:focus{ outline:2px solid var(--glow-mid); outline-offset:1px; }
+  .field .err{ font-size:11px; color:var(--alert); margin-top:6px; min-height:14px; }
+
+  .pay-btn{ width:100%; border:none; border-radius:8px; padding:13px 16px; background:var(--glow-mid); color:#241a04; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:13px; cursor:pointer; transition:filter .15s ease, transform .15s ease; }
+  .pay-btn:hover{ filter:brightness(1.08); }
+  .pay-btn:active{ transform:scale(.98); }
+  .pay-btn:disabled{ filter:grayscale(.4) brightness(.85); cursor:progress; }
+
+  .cancel-btn{ all:unset; display:block; width:100%; text-align:center; margin-top:12px; font-size:12px; color:var(--text-muted); cursor:pointer; padding:6px; }
+  .cancel-btn:hover{ color:var(--text); }
+
+  .fine{ margin-top:16px; font-size:10.5px; line-height:1.5; color:#5f5f68; border-top:1px solid var(--panel-line); padding-top:12px; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:.001ms !important; animation-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+
+  <div class="stage">
+    <p class="eyebrow">Coin-fed lamp</p>
+    <h1>Flip the switch</h1>
+
+    <div class="fixture" id="fixture">
+      <div class="cord"></div>
+      <div class="cap"></div>
+      <div class="thread"></div>
+      <button class="bulb-btn" id="bulbBtn" aria-pressed="false" aria-label="Toggle the bulb">
+        <div class="glow"></div>
+        <div class="bulb-glass"><div class="filament"></div></div>
+      </button>
+      <p class="hint">tap the bulb — five flips are free</p>
+    </div>
+
+    <div class="meter">
+      <div class="meter-label">
+        <span class="top">Flip meter</span>
+        <span class="bottom" id="meterText">0 flips used</span>
+      </div>
+      <div class="odometer" aria-hidden="true">
+        <div class="digit"><span id="d1">0</span></div>
+        <div class="digit slash">/</div>
+        <div class="digit"><span id="d2">5</span></div>
+      </div>
+    </div>
+
+    <p class="status" id="status">Free flips reset each time you top up.</p>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="paycard">
+      <span class="badge" id="badge">Meter empty</span>
+      <h2 id="cardTitle">Top up to keep flipping</h2>
+      <p id="cardBody">You've used your 5 free flips. Enter the M-Pesa number to charge — you'll get a real STK prompt on that phone.</p>
+      <div class="amount"><small>KES</small>10.00</div>
+
+      <div class="field" id="phoneField">
+        <label for="phone">M-Pesa number</label>
+        <input id="phone" inputmode="numeric" placeholder="2547XXXXXXXX" maxlength="12">
+        <div class="err" id="phoneErr"></div>
+      </div>
+
+      <button class="pay-btn" id="payBtn">Send payment prompt</button>
+      <span class="cancel-btn" id="cancelBtn">Leave the bulb off</span>
+      <p class="fine">This sends a real Safaricom STK push through the M-Pesa Daraja API. You'll be charged if you approve it on your phone.</p>
+    </div>
+  </div>
+
+<script>
+  const bulbBtn = document.getElementById('bulbBtn');
+  const fixture = document.getElementById('fixture');
+  const meterText = document.getElementById('meterText');
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const payBtn = document.getElementById('payBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const phoneInput = document.getElementById('phone');
+  const phoneErr = document.getElementById('phoneErr');
+  const phoneField = document.getElementById('phoneField');
+  const badge = document.getElementById('badge');
+  const cardTitle = document.getElementById('cardTitle');
+  const cardBody = document.getElementById('cardBody');
+  const d1 = document.getElementById('d1');
+
+  const FREE_FLIPS = 5;
+  let flipsUsed = 0;
+  let isOn = false;
+  let polling = null;
+
+  function updateMeter(){
+    d1.textContent = flipsUsed;
+    const remaining = FREE_FLIPS - flipsUsed;
+    meterText.textContent = remaining > 0
+      ? (remaining === 1 ? '1 free flip left' : remaining + ' free flips left')
+      : 'Free flips used up';
+  }
+
+  function setStatus(msg, cls){
+    statusEl.textContent = msg;
+    statusEl.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  function toggleBulb(){
+    isOn = !isOn;
+    fixture.classList.toggle('on', isOn);
+    bulbBtn.setAttribute('aria-pressed', String(isOn));
+  }
+
+  bulbBtn.addEventListener('click', () => {
+    if(flipsUsed >= FREE_FLIPS){
+      resetOverlayToPayment();
+      overlay.classList.add('show');
+      return;
+    }
+    flipsUsed++;
+    toggleBulb();
+    updateMeter();
+    setStatus(flipsUsed >= FREE_FLIPS ? 'Next flip needs a KES 10 top-up.' : 'Free flips reset each time you top up.',
+               flipsUsed >= FREE_FLIPS ? 'warn' : '');
+  });
+
+  function resetOverlayToPayment(){
+    badge.textContent = 'Meter empty';
+    badge.className = 'badge';
+    cardTitle.textContent = 'Top up to keep flipping';
+    cardBody.textContent = "You've used your 5 free flips. Enter the M-Pesa number to charge — you'll get a real STK prompt on that phone.";
+    phoneField.style.display = 'block';
+    payBtn.style.display = 'block';
+    payBtn.disabled = false;
+    payBtn.textContent = 'Send payment prompt';
+    phoneErr.textContent = '';
+  }
+
+  function closeOverlay(){ overlay.classList.remove('show'); clearInterval(polling); }
+
+  cancelBtn.addEventListener('click', () => {
+    closeOverlay();
+    setStatus('Bulb stays as it is until you top up.', 'warn');
+  });
+
+  payBtn.addEventListener('click', async () => {
+    const phone = phoneInput.value.trim();
+    if(!/^2547\d{8}$/.test(phone)){
+      phoneErr.textContent = 'Enter as 2547XXXXXXXX (12 digits, starts 2547)';
+      return;
+    }
+    phoneErr.textContent = '';
+    payBtn.disabled = true;
+    payBtn.textContent = 'Sending prompt…';
+
+    try{
+      const res = await fetch('/api/stkpush', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ phone })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || 'Could not start payment');
+
+      badge.textContent = 'Check your phone';
+      cardTitle.textContent = 'Enter your M-Pesa PIN';
+      cardBody.textContent = 'A prompt was sent to ' + phone + '. Approve it on your phone to unlock 5 more flips.';
+      phoneField.style.display = 'none';
+      payBtn.style.display = 'none';
+
+      let attempts = 0;
+      polling = setInterval(async () => {
+        attempts++;
+        const s = await fetch('/api/status/' + data.checkoutRequestId).then(r => r.json());
+        if(s.status === 'paid'){
+          clearInterval(polling);
+          badge.textContent = 'Paid';
+          badge.classList.add('ok');
+          cardTitle.textContent = 'Top-up received';
+          cardBody.textContent = '5 more free flips are unlocked.';
+          setTimeout(() => {
+            closeOverlay();
+            flipsUsed = 0;
+            toggleBulb();
+            updateMeter();
+            setStatus('Top-up received — 5 more free flips unlocked.', 'ok');
+          }, 1200);
+        } else if(s.status === 'failed'){
+          clearInterval(polling);
+          cardTitle.textContent = 'Payment not completed';
+          cardBody.textContent = s.resultDesc || 'The prompt was cancelled or timed out.';
+          setTimeout(() => { closeOverlay(); resetOverlayToPayment(); }, 1800);
+        } else if(attempts > 40){ // ~2 minutes at 3s intervals
+          clearInterval(polling);
+          cardTitle.textContent = 'Still waiting';
+          cardBody.textContent = "We didn't hear back in time. Close this and try again.";
+        }
+      }, 3000);
+
+    }catch(err){
+      phoneErr.textContent = err.message;
+      payBtn.disabled = false;
+      payBtn.textContent = 'Send payment prompt';
+    }
+  });
+
+  updateMeter();
+</script>
+</body>
+</html>
